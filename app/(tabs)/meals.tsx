@@ -76,9 +76,9 @@ export default function MealsScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView className="flex-1 bg-background">
       {/* Calendar */}
-      <View className="bg-white mb-4 shadow-sm">
+      <View className="bg-card mb-4 shadow-sm">
         <Calendar
           mode="single"
           selected={selectedDate}
@@ -96,33 +96,33 @@ export default function MealsScreen() {
       {/* Meals List */}
       <View className="px-4 pb-6">
         <View className="flex-row items-center justify-between mb-4">
-          <Text className="text-xl font-bold text-gray-800">
+          <Text className="text-xl font-bold text-foreground">
             {format(selectedDate, 'EEEE, MMM d')}
           </Text>
           <View className="flex-row items-center">
             <View className={`w-2 h-2 rounded-full mr-2 ${
-              mealsForDate.length > 0 ? 'bg-green-500' : 'bg-gray-300'
+              mealsForDate.length > 0 ? 'bg-success' : 'bg-muted'
             }`} />
-            <Text className="text-sm text-gray-600">
+            <Text className="text-sm text-muted-foreground">
               {mealsForDate.length} meal{mealsForDate.length !== 1 ? 's' : ''}
             </Text>
           </View>
         </View>
         
         {mealsForDate.length === 0 ? (
-          <View className="bg-white p-8 rounded-xl items-center shadow-sm">
+          <View className="bg-card p-8 rounded-xl items-center shadow-sm">
             <Text className="text-6xl mb-3">🍽️</Text>
-            <Text className="text-gray-500 text-center text-base mb-2">
+            <Text className="text-muted-foreground text-center text-base mb-2">
               No meals planned for this day
             </Text>
-            <Text className="text-gray-400 text-center text-sm mb-6">
+            <Text className="text-muted-foreground text-center text-sm mb-6 opacity-70">
               Start planning your meals to track your nutrition
             </Text>
             <TouchableOpacity 
-              className="bg-blue-600 px-6 py-3 rounded-xl shadow-sm active:scale-95"
+              className="bg-info px-6 py-3 rounded-xl shadow-sm active:scale-95"
               onPress={() => setIsDrawerOpen(true)}
             >
-              <Text className="text-white font-semibold text-base">+ Add First Meal</Text>
+              <Text className="text-info-foreground font-semibold text-base">+ Add First Meal</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -132,7 +132,7 @@ export default function MealsScreen() {
               <View className="mb-4">
                 <View className="flex-row items-center mb-3">
                   <Text className="text-2xl mr-2">{getMealTypeEmoji('breakfast')}</Text>
-                  <Text className="text-lg font-semibold text-gray-700">
+                  <Text className="text-lg font-semibold text-foreground">
                     {getMealTypeLabel('breakfast')}
                   </Text>
                 </View>
@@ -140,9 +140,9 @@ export default function MealsScreen() {
                   {mealsByType.breakfast.map((meal) => (
                     <TouchableOpacity
                       key={meal.id}
-                      className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm active:scale-98"
+                      className="bg-card p-4 rounded-xl border border shadow-sm active:scale-98"
                     >
-                      <Text className="text-base font-medium text-gray-800">
+                      <Text className="text-base font-medium text-foreground">
                         {meal.name}
                       </Text>
                     </TouchableOpacity>
@@ -156,7 +156,7 @@ export default function MealsScreen() {
               <View className="mb-4">
                 <View className="flex-row items-center mb-3">
                   <Text className="text-2xl mr-2">{getMealTypeEmoji('lunch')}</Text>
-                  <Text className="text-lg font-semibold text-gray-700">
+                  <Text className="text-lg font-semibold text-foreground">
                     {getMealTypeLabel('lunch')}
                   </Text>
                 </View>
@@ -164,9 +164,9 @@ export default function MealsScreen() {
                   {mealsByType.lunch.map((meal) => (
                     <TouchableOpacity
                       key={meal.id}
-                      className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm active:scale-98"
+                      className="bg-card p-4 rounded-xl border border shadow-sm active:scale-98"
                     >
-                      <Text className="text-base font-medium text-gray-800">
+                      <Text className="text-base font-medium text-foreground">
                         {meal.name}
                       </Text>
                     </TouchableOpacity>
@@ -180,7 +180,7 @@ export default function MealsScreen() {
               <View className="mb-4">
                 <View className="flex-row items-center mb-3">
                   <Text className="text-2xl mr-2">{getMealTypeEmoji('dinner')}</Text>
-                  <Text className="text-lg font-semibold text-gray-700">
+                  <Text className="text-lg font-semibold text-foreground">
                     {getMealTypeLabel('dinner')}
                   </Text>
                 </View>
@@ -188,9 +188,9 @@ export default function MealsScreen() {
                   {mealsByType.dinner.map((meal) => (
                     <TouchableOpacity
                       key={meal.id}
-                      className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm active:scale-98"
+                      className="bg-card p-4 rounded-xl border border shadow-sm active:scale-98"
                     >
-                      <Text className="text-base font-medium text-gray-800">
+                      <Text className="text-base font-medium text-foreground">
                         {meal.name}
                       </Text>
                     </TouchableOpacity>
@@ -201,10 +201,10 @@ export default function MealsScreen() {
 
             {/* Add Meal Button */}
             <TouchableOpacity 
-              className="bg-blue-600 p-4 rounded-xl items-center mt-2 shadow-sm active:scale-98"
+              className="bg-info p-4 rounded-xl items-center mt-2 shadow-sm active:scale-98"
               onPress={() => setIsDrawerOpen(true)}
             >
-              <Text className="text-white font-semibold text-base">+ Add Another Meal</Text>
+              <Text className="text-info-foreground font-semibold text-base">+ Add Another Meal</Text>
             </TouchableOpacity>
           </>
         )}

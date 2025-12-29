@@ -32,22 +32,22 @@ export default function GroceryScreen() {
   const uncheckedCount = items.filter(item => !item.checked).length;
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-background">
       {/* Header Stats */}
-      <View className="bg-white px-4 py-6 border-b border-gray-200">
-        <Text className="text-2xl font-bold text-gray-800 mb-2">
+      <View className="bg-card px-4 py-6">
+        <Text className="text-2xl font-bold text-foreground mb-2">
           Grocery List
         </Text>
         <View className="flex-row items-center gap-4">
           <View className="flex-row items-center">
-            <View className="w-3 h-3 bg-blue-600 rounded-full mr-2" />
-            <Text className="text-gray-600">
+            <View className="w-3 h-3 bg-info rounded-full mr-2" />
+            <Text className="text-muted-foreground">
               {uncheckedCount} items left
             </Text>
           </View>
           <View className="flex-row items-center">
-            <View className="w-3 h-3 bg-green-600 rounded-full mr-2" />
-            <Text className="text-gray-600">
+            <View className="w-3 h-3 bg-success rounded-full mr-2" />
+            <Text className="text-muted-foreground">
               {items.length - uncheckedCount} completed
             </Text>
           </View>
@@ -56,30 +56,28 @@ export default function GroceryScreen() {
 
       {/* Grocery Items */}
       <ScrollView className="flex-1 px-4 py-4">
-        <View className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6">
+        <View className="bg-card rounded-lg overflow-hidden mb-6">
           {items.map((item, index) => (
             <TouchableOpacity
               key={item.id}
               onPress={() => toggleItem(item.id)}
-              className={`p-4 flex-row items-center ${
-                index !== items.length - 1 ? 'border-b border-gray-100' : ''
-              }`}
+              className="p-4 flex-row items-center"
             >
               {/* Checkbox */}
               <View className={`w-6 h-6 rounded border-2 mr-3 items-center justify-center ${
                 item.checked 
-                  ? 'bg-green-600 border-green-600' 
-                  : 'border-gray-300 bg-white'
+                  ? 'bg-success border-success' 
+                  : 'border-muted bg-card'
               }`}>
                 {item.checked && (
-                  <Text className="text-white font-bold text-sm">✓</Text>
+                  <Text className="text-success-foreground font-bold text-sm">✓</Text>
                 )}
               </View>
 
               {/* Item Name */}
               <View className="flex-1">
                 <Text className={`text-base font-medium ${
-                  item.checked ? 'text-gray-400 line-through' : 'text-gray-800'
+                  item.checked ? 'text-muted-foreground line-through' : 'text-foreground'
                 }`}>
                   {item.name}
                 </Text>
@@ -90,10 +88,10 @@ export default function GroceryScreen() {
 
         {/* Add Item Button */}
         <TouchableOpacity 
-          className="bg-blue-600 p-4 rounded-lg items-center mb-6"
+          className="bg-info p-4 rounded-lg items-center mb-6"
           onPress={() => setIsDrawerOpen(true)}
         >
-          <Text className="text-white font-semibold text-lg">+ Add Item</Text>
+          <Text className="text-info-foreground font-semibold text-lg">+ Add Item</Text>
         </TouchableOpacity>
       </ScrollView>
 
