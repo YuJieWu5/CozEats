@@ -8,6 +8,7 @@ export default function RootLayout() {
     <ThemeProvider defaultTheme="system">
         <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {/* Add more screens here */}
       </Stack>
     </ThemeProvider>
