@@ -4,10 +4,12 @@ import { useColorScheme as useNativeColorScheme } from 'react-native';
 import { themes } from './theme';
 
 type ThemeType = 'light' | 'dark';
+type ThemeOption = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
     theme: ThemeType;
-    setTheme: (theme: ThemeType) => void;
+    themeOption: ThemeOption;
+    setThemeOption: (option: ThemeOption) => void;
     activeTheme: any;
 }
 
@@ -18,13 +20,23 @@ export function ThemeProvider({
   defaultTheme = 'system' 
 }: { 
   children: React.ReactNode;
-  defaultTheme?: 'light' | 'dark' | 'system';
+  defaultTheme?: ThemeOption;
 }) {
-    const systemColorScheme = useNativeColorScheme() as ThemeType || 'light';
+    const systemColorScheme = (useNativeColorScheme() as ThemeType) || 'light';
+    const [themeOption, setThemeOption] = useState<ThemeOption>(defaultTheme);
     const [theme, setTheme] = useState<ThemeType>(
-      defaultTheme === 'system' ? systemColorScheme : defaultTheme as ThemeType
+      defaultTheme === 'system' ? systemColorScheme : (defaultTheme as ThemeType)
     );
     const { setColorScheme } = useNativewindColorScheme();
+
+    // Update theme when themeOption or system theme changes
+    useEffect(() => {
+        if (themeOption === 'system') {
+            setTheme(systemColorScheme);
+        } else {
+            setTheme(themeOption as ThemeType);
+        }
+    }, [themeOption, systemColorScheme]);
 
     useEffect(() => {
         setColorScheme(theme);
@@ -33,7 +45,7 @@ export function ThemeProvider({
     const activeTheme = themes[theme];
 
     return (
-        <ThemeContext.Provider value={{ theme, setTheme, activeTheme }}>
+        <ThemeContext.Provider value={{ theme, themeOption, setThemeOption, activeTheme }}>
             {children}
         </ThemeContext.Provider>
     );

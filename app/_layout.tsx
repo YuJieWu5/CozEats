@@ -1,16 +1,27 @@
 
 import '../global.css';
-import { ThemeProvider } from '@/lib/theme-context';
+import { ThemeProvider, useTheme } from '@/lib/theme-context';
 import { Stack } from 'expo-router';
+import { View } from 'react-native';
 
-export default function RootLayout() {
+function RootNavigator() {
+  const { activeTheme } = useTheme();
+  
   return (
-    <ThemeProvider defaultTheme="system">
-        <Stack>
+    <View style={[{ flex: 1 }, activeTheme]}>
+      <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {/* Add more screens here */}
       </Stack>
+    </View>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider defaultTheme="system">
+      <RootNavigator />
     </ThemeProvider>
   );
 }
