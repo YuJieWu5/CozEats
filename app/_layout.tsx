@@ -11,6 +11,8 @@ function RootNavigator() {
     <View style={[{ flex: 1 }, activeTheme]}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="signup" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {/* Add more screens here */}
       </Stack>

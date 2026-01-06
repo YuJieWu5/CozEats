@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Drawer } from '@/components/ui/drawer';
 import { useTheme } from '@/lib/theme-context';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function ProfileScreen() {
   const { themeOption, setThemeOption } = useTheme();
@@ -14,12 +16,29 @@ export default function ProfileScreen() {
     router.replace('/');
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/meals');
+    }
+  };
+
   const getThemeLabel = (option: string) => {
     return option.charAt(0).toUpperCase() + option.slice(1);
   };
 
   return (
-    <View className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+      <StatusBar style="auto" />
+      
+      {/* Header with Back Button */}
+      <View className="bg-card px-4 py-4 flex-row items-center">
+        <TouchableOpacity onPress={handleBack} className="mr-4 p-2 active:opacity-70">
+          <Ionicons name="arrow-back" size={24} color="#6B7280" />
+        </TouchableOpacity>
+      </View>
+
       {/* Profile Header */}
       <View className="bg-card px-4 py-6">
         <View className="items-center mb-4">
@@ -136,6 +155,7 @@ export default function ProfileScreen() {
           ))}
         </View>
       </Drawer>
-    </View>
+    </SafeAreaView>
   );
 }
+
