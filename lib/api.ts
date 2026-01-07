@@ -73,23 +73,49 @@ export async function login(data: LoginData): Promise<User> {
 }
 
 /**
- * Update user information
+ * Update user name
+ * Endpoint: PUT /users/{userId}/name
  */
-export async function updateUser(
+export async function updateUserName(
   userId: string,
-  data: { name?: string; password?: string }
+  name: string
 ): Promise<User> {
-  const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/name`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ name }),
   });
 
   if (!response.ok) {
     const error: ApiError = await response.json();
-    throw new Error(error.detail || 'Failed to update user');
+    throw new Error(error.detail || 'Failed to update user name');
+  }
+
+  return response.json();
+}
+
+/**
+ * Change user password
+ * Endpoint: PUT /users/{userId}/password
+ */
+export async function changePassword(
+  userId: string,
+  originalPassword: string,
+  newPassword: string
+): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/password`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ originalPassword, newPassword }),
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to change password');
   }
 
   return response.json();
