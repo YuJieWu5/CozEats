@@ -1,18 +1,24 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Drawer } from '@/components/ui/drawer';
 import { useTheme } from '@/lib/theme-context';
+import { useAuth } from '@/lib/auth-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { ThemeSelectorDrawer } from '@/components/theme-selector-drawer';
+import { EditProfileDrawer } from '@/components/edit-profile-drawer';
+import { ChangePasswordDrawer } from '@/components/change-password-drawer';
 
 export default function ProfileScreen() {
   const { themeOption, setThemeOption } = useTheme();
+  const { user, logout } = useAuth();
   const [isThemeSelectOpen, setIsThemeSelectOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
-  const handleLogout = () => {
-    // TODO: Add your logout logic here
+  const handleLogout = async () => {
+    await logout();
     router.replace('/');
   };
 
@@ -26,6 +32,16 @@ export default function ProfileScreen() {
 
   const getThemeLabel = (option: string) => {
     return option.charAt(0).toUpperCase() + option.slice(1);
+  };
+
+  // Get user initials for avatar
+  const getInitials = () => {
+    if (!user?.name) return '?';
+    const names = user.name.trim().split(' ');
+    if (names.length === 1) {
+      return names[0].substring(0, 2).toUpperCase();
+    }
+    return (names[0][0] + names[names.length - 1][0]).toUpperCase();
   };
 
   return (
@@ -44,10 +60,10 @@ export default function ProfileScreen() {
         <View className="items-center mb-4">
           {/* Avatar placeholder */}
           <View className="w-24 h-24 bg-info rounded-full items-center justify-center mb-3">
-            <Text className="text-info-foreground text-3xl font-bold">JD</Text>
+            <Text className="text-info-foreground text-3xl font-bold">{getInitials()}</Text>
           </View>
-          <Text className="text-2xl font-bold text-foreground">John Doe</Text>
-          <Text className="text-muted-foreground">john.doe@example.com</Text>
+          <Text className="text-2xl font-bold text-foreground">{user?.name || 'User'}</Text>
+          <Text className="text-muted-foreground">{user?.email || 'No email'}</Text>
         </View>
       </View>
 
@@ -58,12 +74,18 @@ export default function ProfileScreen() {
             Account
           </Text>
           <View className="bg-card rounded-lg overflow-hidden">
-            <TouchableOpacity className="p-4 flex-row justify-between items-center">
-              <Text className="text-base text-foreground">Edit Profile</Text>
+            <TouchableOpacity 
+              className="p-4 flex-row justify-between items-center active:opacity-70"
+              onPress={() => setIsEditProfileOpen(true)}
+            >
+              <Text className="text-base text-foreground">Edit Name</Text>
               <Text className="text-muted-foreground">›</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="p-4 flex-row justify-between items-center">
-              <Text className="text-base text-foreground">Change Group</Text>
+            <TouchableOpacity 
+              className="p-4 flex-row justify-between items-center active:opacity-70"
+              onPress={() => setIsChangePasswordOpen(true)}
+            >
+              <Text className="text-base text-foreground">Change Password</Text>
               <Text className="text-muted-foreground">›</Text>
             </TouchableOpacity>
           </View>
@@ -129,32 +151,24 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* Theme Selector Drawer */}
-      <Drawer
+      <ThemeSelectorDrawer
         open={isThemeSelectOpen}
         onClose={() => setIsThemeSelectOpen(false)}
-        title="Select Theme"
-        size="small"
-      >
-        <View className="px-4 py-2">
-          {['light', 'dark', 'system'].map((option) => (
-            <TouchableOpacity
-              key={option}
-              onPress={() => {
-                setThemeOption(option as 'light' | 'dark' | 'system');
-                setIsThemeSelectOpen(false);
-              }}
-              className="flex-row items-center justify-between p-4 active:bg-accent/50 rounded-lg"
-            >
-              <Text className="text-base text-foreground">
-                {getThemeLabel(option)}
-              </Text>
-              {themeOption === option && (
-                <Ionicons name="checkmark" size={20} color="#4F46E5" />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Drawer>
+        currentTheme={themeOption}
+        onThemeChange={setThemeOption}
+      />
+
+      {/* Edit Profile Drawer */}
+      <EditProfileDrawer
+        open={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+      />
+
+      {/* Change Password Drawer */}
+      <ChangePasswordDrawer
+        open={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
     </SafeAreaView>
   );
 }

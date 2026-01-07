@@ -5,11 +5,24 @@ import { useState } from 'react';
 import { Sheet } from '@/components/ui/sheet';
 import { View, Text } from 'react-native';
 import { router } from 'expo-router';
+import { useAuth } from '@/lib/auth-context';
 
 function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { user } = useAuth();
+
   const handleNavigateToProfile = () => {
     onClose();
     router.push('/profile');
+  };
+
+  // Get user initials for avatar
+  const getInitials = () => {
+    if (!user?.name) return '?';
+    const names = user.name.trim().split(' ');
+    if (names.length === 1) {
+      return names[0].substring(0, 2).toUpperCase();
+    }
+    return (names[0][0] + names[names.length - 1][0]).toUpperCase();
   };
 
   return (
@@ -24,10 +37,14 @@ function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
         <View className="p-6">
           {/* Avatar placeholder */}
           <View className="w-20 h-20 bg-info rounded-full items-center justify-center mb-3">
-            <Text className="text-info-foreground text-2xl font-bold">JD</Text>
+            <Text className="text-info-foreground text-2xl font-bold">{getInitials()}</Text>
           </View>
-          <Text className="text-xl font-bold text-foreground">John Doe</Text>
-          <Text className="text-muted-foreground mt-1">john.doe@example.com</Text>
+          <Text className="text-xl font-bold text-foreground">
+            {user?.name || 'User'}
+          </Text>
+          <Text className="text-muted-foreground mt-1">
+            {user?.email || 'No email'}
+          </Text>
         </View>
 
         {/* Menu Items */}
