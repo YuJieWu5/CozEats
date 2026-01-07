@@ -1,5 +1,7 @@
 import { useTheme } from '@/lib/theme-context';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { useAuth } from '@/lib/auth-context';
+import { signup } from '@/lib/api';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
@@ -7,14 +9,53 @@ import { useState } from 'react';
 
 export default function SignupScreen() {
   const { activeTheme } = useTheme();
+  const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSignup = () => {
-    // TODO: Add your registration logic here
-    // For now, we'll just navigate to the tabs
-    router.replace('/(tabs)/meals');
+  const handleSignup = async () => {
+    // Validate inputs
+    if (!username.trim() || !email.trim() || !password.trim()) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      setError('Please enter a valid email');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Call the signup API
+      const user = await signup({
+        email: email.trim(),
+        password: password,
+        name: username.trim(),
+      });
+
+      // Save user to auth context
+      await login(user);
+
+      // Navigate to the main app
+      router.replace('/(tabs)/meals');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create account';
+      setError(message);
+      Alert.alert('Sign Up Failed', message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBackToLogin = () => {
@@ -44,6 +85,7 @@ export default function SignupScreen() {
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
+              editable={!isLoading}
             />
           </View>
 
@@ -58,11 +100,12 @@ export default function SignupScreen() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!isLoading}
             />
           </View>
 
           {/* Password Input */}
-          <View className="mb-6">
+          <View className="mb-4">
             <Text className="text-sm font-medium mb-2 text-foreground">Password</Text>
             <TextInput
               className="w-full px-4 py-3 border border rounded-lg bg-card text-foreground"
@@ -71,17 +114,30 @@ export default function SignupScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              editable={!isLoading}
             />
           </View>
 
+          {/* Error Message */}
+          {error ? (
+            <View className="mb-4">
+              <Text className="text-destructive text-sm text-center">{error}</Text>
+            </View>
+          ) : null}
+
           {/* Sign Up Button */}
           <TouchableOpacity
-            className="w-full bg-info py-4 rounded-lg mb-4 active:opacity-80"
+            className={`w-full bg-info py-4 rounded-lg mb-4 active:opacity-80 ${isLoading ? 'opacity-50' : ''}`}
             onPress={handleSignup}
+            disabled={isLoading}
           >
-            <Text className="text-info-foreground text-center font-semibold text-lg">
-              Sign Up
-            </Text>
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-info-foreground text-center font-semibold text-lg">
+                Sign Up
+              </Text>
+            )}
           </TouchableOpacity>
 
           {/* Log In Link */}
