@@ -1,6 +1,7 @@
 
 import '../global.css';
 import { ThemeProvider, useTheme } from '@/lib/theme-context';
+import { AuthProvider } from '@/lib/auth-context';
 import { Stack } from 'expo-router';
 import { View } from 'react-native';
 
@@ -23,7 +24,9 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <ThemeProvider defaultTheme="system">
-      <RootNavigator />
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
     </ThemeProvider>
   );
 }
