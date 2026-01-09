@@ -1,28 +1,45 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
 import { Drawer } from '@/components/ui/drawer';
+import { createGrocery } from '@/lib/api';
 
 interface CreateGroceryFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (item: { name: string }) => void;
+  onSuccess: () => void;
+  groupId: string | null;
 }
 
-export function CreateGroceryForm({ open, onClose, onSubmit }: CreateGroceryFormProps) {
+export function CreateGroceryForm({ open, onClose, onSuccess, groupId }: CreateGroceryFormProps) {
   const [itemName, setItemName] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!itemName.trim()) {
       return;
     }
 
-    onSubmit({
-      name: itemName.trim(),
-    });
+    if (!groupId) {
+      Alert.alert('Error', 'No group selected');
+      return;
+    }
 
-    // Reset form
-    setItemName('');
-    onClose();
+    try {
+      setLoading(true);
+      await createGrocery({
+        item: itemName.trim(),
+        groupId: groupId,
+      });
+
+      // Reset form
+      setItemName('');
+      onSuccess();
+    } catch (err) {
+      console.error('Failed to create grocery:', err);
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to create grocery item');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -57,6 +74,7 @@ export function CreateGroceryForm({ open, onClose, onSubmit }: CreateGroceryForm
         <View className="flex-row gap-3 mt-4 mb-6">
           <TouchableOpacity
             onPress={handleCancel}
+            disabled={loading}
             className="flex-1 bg-muted p-4 rounded-xl items-center active:scale-98"
           >
             <Text className="text-foreground font-semibold text-base">Cancel</Text>
@@ -64,18 +82,22 @@ export function CreateGroceryForm({ open, onClose, onSubmit }: CreateGroceryForm
           
           <TouchableOpacity
             onPress={handleSubmit}
-            disabled={!itemName.trim()}
+            disabled={!itemName.trim() || loading}
             className={`flex-1 p-4 rounded-xl items-center active:scale-98 ${
-              itemName.trim() ? 'bg-info' : 'bg-muted opacity-50'
+              itemName.trim() && !loading ? 'bg-info' : 'bg-muted opacity-50'
             }`}
           >
-            <Text
-              className={`font-semibold text-base ${
-                itemName.trim() ? 'text-info-foreground' : 'text-muted-foreground'
-              }`}
-            >
-              Add
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text
+                className={`font-semibold text-base ${
+                  itemName.trim() ? 'text-info-foreground' : 'text-muted-foreground'
+                }`}
+              >
+                Add
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

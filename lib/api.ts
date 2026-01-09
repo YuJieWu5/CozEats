@@ -260,3 +260,131 @@ export async function deleteMeal(mealId: string): Promise<{ message: string }> {
 
   return response.json();
 }
+
+// ==================== Grocery APIs ====================
+
+export interface GroceryResponse {
+  id: string;
+  item: string;
+  completed: boolean;
+  groupId: string;
+  completedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroceryCreateData {
+  item: string;
+  groupId: string;
+}
+
+export interface GroceryUpdateData {
+  userId: string;
+}
+
+/**
+ * Get all grocery items for a specific group
+ * Endpoint: GET /groceries?groupId={groupId}
+ */
+export async function getGroceries(groupId: string): Promise<GroceryResponse[]> {
+  const params = new URLSearchParams({ groupId });
+  
+  const response = await fetch(`${API_BASE_URL}/groceries?${params.toString()}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to fetch groceries');
+  }
+
+  return response.json();
+}
+
+/**
+ * Create a new grocery item
+ * Endpoint: POST /groceries
+ */
+export async function createGrocery(data: GroceryCreateData): Promise<GroceryResponse> {
+  const response = await fetch(`${API_BASE_URL}/groceries`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to create grocery item');
+  }
+
+  return response.json();
+}
+
+/**
+ * Update a grocery item (mark as completed)
+ * Endpoint: PUT /groceries/{groceryId}
+ */
+export async function updateGrocery(
+  groceryId: string,
+  data: GroceryUpdateData
+): Promise<GroceryResponse> {
+  const response = await fetch(`${API_BASE_URL}/groceries/${groceryId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to update grocery item');
+  }
+
+  return response.json();
+}
+
+/**
+ * Delete a single grocery item
+ * Endpoint: DELETE /groceries/{groceryId}
+ */
+export async function deleteGrocery(groceryId: string): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/groceries/${groceryId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to delete grocery item');
+  }
+
+  return response.json();
+}
+
+/**
+ * Delete all grocery items for a group
+ * Endpoint: DELETE /groceries/group/{groupId}
+ */
+export async function deleteAllGroceries(groupId: string): Promise<{ message: string; deletedCount: number }> {
+  const response = await fetch(`${API_BASE_URL}/groceries/group/${groupId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to delete all groceries');
+  }
+
+  return response.json();
+}
