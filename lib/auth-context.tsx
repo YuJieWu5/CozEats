@@ -3,7 +3,7 @@
  */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User } from './api';
+import { User, getUserGroups } from './api';
 
 interface AuthContextType {
   user: User | null;
@@ -16,6 +16,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const USER_STORAGE_KEY = '@cozeats_user';
+const SELECTED_GROUP_KEY = '@cozeats_selected_group';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -43,6 +44,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
       setUser(userData);
+      
+      // Fetch user's groups and set the first group as selected
+      const groups = await getUserGroups(userData.id);
+      if (groups.length > 0) {
+        await AsyncStorage.setItem(SELECTED_GROUP_KEY, groups[0].groupId);
+      }
     } catch (error) {
       console.error('Failed to save user:', error);
       throw error;
@@ -52,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await AsyncStorage.removeItem(USER_STORAGE_KEY);
+      await AsyncStorage.removeItem(SELECTED_GROUP_KEY);
       setUser(null);
     } catch (error) {
       console.error('Failed to logout:', error);

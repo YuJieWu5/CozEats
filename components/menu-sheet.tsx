@@ -15,7 +15,7 @@ interface MenuSheetProps {
 const SELECTED_GROUP_KEY = '@cozeats_selected_group';
 
 export function MenuSheet({ open, onClose }: MenuSheetProps) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -76,6 +76,12 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
   const handleNavigateToProfile = () => {
     onClose();
     router.push('/profile');
+  };
+
+  const handleLogout = async () => {
+    onClose();
+    await logout();
+    router.replace('/');
   };
 
   const handleGroupPress = async (groupId: string) => {
@@ -199,6 +205,17 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
               <Text className="text-base text-foreground ml-4 font-medium">Profile Settings</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Logout Button */}
+        <View className="p-4 border-t border-border">
+          <TouchableOpacity 
+            className="flex-row items-center justify-center p-4 bg-destructive rounded-lg active:opacity-70"
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+            <Text className="text-base text-destructive-foreground ml-3 font-semibold">Log Out</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Sheet>
