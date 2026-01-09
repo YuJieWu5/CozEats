@@ -2,65 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 import { useState } from 'react';
-import { Sheet } from '@/components/ui/sheet';
-import { View, Text } from 'react-native';
-import { router } from 'expo-router';
-import { useAuth } from '@/lib/auth-context';
-
-function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { user } = useAuth();
-
-  const handleNavigateToProfile = () => {
-    onClose();
-    router.push('/profile');
-  };
-
-  // Get user initials for avatar
-  const getInitials = () => {
-    if (!user?.name) return '?';
-    const names = user.name.trim().split(' ');
-    if (names.length === 1) {
-      return names[0].substring(0, 2).toUpperCase();
-    }
-    return (names[0][0] + names[names.length - 1][0]).toUpperCase();
-  };
-
-  return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      side="left"
-      size={0.75}
-    >
-      <View className="flex-1 bg-background">
-        {/* User Info Section */}
-        <View className="p-6">
-          {/* Avatar placeholder */}
-          <View className="w-20 h-20 bg-info rounded-full items-center justify-center mb-3">
-            <Text className="text-info-foreground text-2xl font-bold">{getInitials()}</Text>
-          </View>
-          <Text className="text-xl font-bold text-foreground">
-            {user?.name || 'User'}
-          </Text>
-          <Text className="text-muted-foreground mt-1">
-            {user?.email || 'No email'}
-          </Text>
-        </View>
-
-        {/* Menu Items */}
-        <View className="flex-1 p-4">
-          <TouchableOpacity 
-            className="flex-row items-center p-4 bg-card rounded-lg active:opacity-70"
-            onPress={handleNavigateToProfile}
-          >
-            <Ionicons name="settings-outline" size={24} color="#6B7280" />
-            <Text className="text-base text-foreground ml-4 font-medium">Settings</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Sheet>
-  );
-}
+import { MenuSheet } from '@/components/menu-sheet';
 
 export default function TabLayout() {
   const [menuOpen, setMenuOpen] = useState(false);

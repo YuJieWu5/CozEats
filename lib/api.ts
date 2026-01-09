@@ -27,6 +27,31 @@ export interface ApiError {
   detail: string;
 }
 
+export interface Group {
+  groupId: string;
+  name: string;
+}
+
+/**
+ * Get all groups that a user belongs to
+ * Endpoint: GET /users/{userId}/groups
+ */
+export async function getUserGroups(userId: string): Promise<Group[]> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/groups`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to fetch user groups');
+  }
+
+  return response.json();
+}
+
 /**
  * Sign up a new user
  */
