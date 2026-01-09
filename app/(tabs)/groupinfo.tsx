@@ -1,29 +1,118 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getGroupDetail, GroupDetailResponse } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { useFocusEffect } from '@react-navigation/native';
 
-// Mock data
-const mockGroupData = {
-  name: 'The Foodie Family',
-  inviteCode: 'COZE-XK9F-2024',
-  members: [
-    { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'admin' as const, avatar: 'JD' },
-    { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'member' as const, avatar: 'JS' },
-    { id: 3, name: 'Mike Chen', email: 'mike.chen@example.com', role: 'member' as const, avatar: 'MC' },
-  ],
-  currentUserId: 1, // John Doe is the current user (admin)
-};
+const SELECTED_GROUP_KEY = '@cozeats_selected_group';
 
 export default function GroupInfoScreen() {
   const [showCode, setShowCode] = useState(false);
+  const [groupData, setGroupData] = useState<GroupDetailResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
+  const { user } = useAuth();
   
-  const currentUser = mockGroupData.members.find(m => m.id === mockGroupData.currentUserId);
-  const isAdmin = currentUser?.role === 'admin';
+  // Load group data whenever the screen comes into focus or groupId changes
+  useFocusEffect(
+    useCallback(() => {
+      checkAndLoadGroup();
+    }, [])
+  );
+
+  // Also watch for groupId changes
+  useEffect(() => {
+    if (currentGroupId) {
+      loadGroupData(currentGroupId);
+    }
+  }, [currentGroupId]);
+
+  const checkAndLoadGroup = async () => {
+    try {
+      const groupId = await AsyncStorage.getItem(SELECTED_GROUP_KEY);
+      
+      if (!groupId) {
+        setError('No group selected');
+        setLoading(false);
+        return;
+      }
+
+      // Only reload if groupId has changed
+      if (groupId !== currentGroupId) {
+        setCurrentGroupId(groupId);
+      } else {
+        // Still reload even if same groupId (in case data changed)
+        await loadGroupData(groupId);
+      }
+    } catch (err) {
+      console.error('Error checking group ID:', err);
+      setError('Failed to load group ID');
+      setLoading(false);
+    }
+  };
+
+  const loadGroupData = async (groupId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await getGroupDetail(groupId);
+      setGroupData(data);
+    } catch (err) {
+      console.error('Error loading group data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load group data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" />
+        <Text className="text-muted-foreground mt-4">Loading group info...</Text>
+      </View>
+    );
+  }
+
+  if (error || !groupData) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center px-4">
+        <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+        <Text className="text-destructive text-lg font-semibold mt-4">
+          {error || 'Failed to load group'}
+        </Text>
+        <TouchableOpacity 
+          className="bg-info px-6 py-3 rounded-lg mt-4"
+          onPress={checkAndLoadGroup}
+        >
+          <Text className="text-info-foreground font-medium">Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const currentUserMember = groupData.members.find(m => m.userEmail === user?.email);
+  const isAdmin = currentUserMember?.role === 'admin';
+
+  const getInitials = (name: string | null, email: string) => {
+    if (name) {
+      const parts = name.split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    }
+    return email.substring(0, 2).toUpperCase();
+  };
 
   const handleCopyCode = async () => {
-    await Clipboard.setStringAsync(mockGroupData.inviteCode);
-    Alert.alert('Copied!', 'Invite code copied to clipboard');
+    // TODO: Implement invite code generation and copying
+    Alert.alert('Coming Soon', 'Invite code functionality will be available soon');
   };
 
   const handleShowInviteCode = () => {
@@ -40,7 +129,7 @@ export default function GroupInfoScreen() {
             <Text className="text-4xl">👨‍👩‍👧‍👦</Text>
           </View>
           <Text className="text-2xl font-bold text-foreground mb-2">
-            {mockGroupData.name}
+            {groupData.groupName}
           </Text>
           <View className="flex-row items-center bg-muted px-3 py-1.5 rounded-full">
             <Ionicons 
@@ -85,16 +174,10 @@ export default function GroupInfoScreen() {
           
           {showCode && (
             <View className="px-4 pb-4 border-t border-border">
-              <View className="flex-row items-center justify-between bg-muted rounded-lg p-3 mt-3">
-                <Text className="text-lg font-mono font-semibold text-foreground tracking-wider">
-                  {mockGroupData.inviteCode}
+              <View className="bg-muted rounded-lg p-3 mt-3">
+                <Text className="text-sm text-muted-foreground text-center">
+                  Invite code generation coming soon
                 </Text>
-                <TouchableOpacity 
-                  className="bg-info px-4 py-2 rounded-lg active:opacity-80"
-                  onPress={handleCopyCode}
-                >
-                  <Text className="text-info-foreground font-medium text-sm">Copy</Text>
-                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -104,14 +187,14 @@ export default function GroupInfoScreen() {
       {/* Members Section */}
       <View className="px-4 mb-6">
         <Text className="text-sm font-semibold text-muted-foreground uppercase mb-3 tracking-wide">
-          Members ({mockGroupData.members.length})
+          Members ({groupData.members.length})
         </Text>
         <View className="bg-card rounded-xl overflow-hidden shadow-sm">
-          {mockGroupData.members.map((member, index) => (
+          {groupData.members.map((member, index) => (
             <View 
-              key={member.id}
+              key={`${member.userEmail}-${index}`}
               className={`p-4 flex-row items-center ${
-                index !== mockGroupData.members.length - 1 ? 'border-b border-border' : ''
+                index !== groupData.members.length - 1 ? 'border-b border-border' : ''
               }`}
             >
               {/* Avatar */}
@@ -121,7 +204,7 @@ export default function GroupInfoScreen() {
                 <Text className={`font-semibold ${
                   member.role === 'admin' ? 'text-success' : 'text-muted-foreground'
                 }`}>
-                  {member.avatar}
+                  {getInitials(member.userName, member.userEmail)}
                 </Text>
               </View>
               
@@ -129,13 +212,13 @@ export default function GroupInfoScreen() {
               <View className="flex-1">
                 <View className="flex-row items-center">
                   <Text className="text-base font-medium text-foreground">
-                    {member.name}
+                    {member.userName || 'No Name'}
                   </Text>
-                  {member.id === mockGroupData.currentUserId && (
+                  {member.userEmail === user?.email && (
                     <Text className="text-xs text-muted-foreground ml-2">(You)</Text>
                   )}
                 </View>
-                <Text className="text-sm text-muted-foreground">{member.email}</Text>
+                <Text className="text-sm text-muted-foreground">{member.userEmail}</Text>
               </View>
               
               {/* Role Badge */}
@@ -150,43 +233,23 @@ export default function GroupInfoScreen() {
       </View>
 
       {/* Group Stats */}
-      <View className="px-4 mb-6">
+      <View className="px-4 mb-8">
         <Text className="text-sm font-semibold text-muted-foreground uppercase mb-3 tracking-wide">
           Group Stats
         </Text>
         <View className="flex-row gap-3">
           <View className="flex-1 bg-card p-4 rounded-xl items-center shadow-sm">
             <Text className="text-3xl mb-1">🍽️</Text>
-            <Text className="text-2xl font-bold text-foreground">24</Text>
+            <Text className="text-2xl font-bold text-foreground">{groupData.mealCount}</Text>
             <Text className="text-sm text-muted-foreground">Meals Planned</Text>
           </View>
           <View className="flex-1 bg-card p-4 rounded-xl items-center shadow-sm">
             <Text className="text-3xl mb-1">🛒</Text>
-            <Text className="text-2xl font-bold text-foreground">12</Text>
+            <Text className="text-2xl font-bold text-foreground">{groupData.groceryCount}</Text>
             <Text className="text-sm text-muted-foreground">Grocery Items</Text>
           </View>
         </View>
       </View>
-
-      {/* Danger Zone (Admin only) */}
-      {isAdmin && (
-        <View className="px-4 mb-8">
-          <Text className="text-sm font-semibold text-muted-foreground uppercase mb-3 tracking-wide">
-            Danger Zone
-          </Text>
-          <View className="bg-card rounded-xl overflow-hidden shadow-sm">
-            <TouchableOpacity 
-              className="p-4 flex-row items-center active:bg-destructive/10"
-              onPress={() => Alert.alert('Delete Group', 'Are you sure you want to delete this group? This action cannot be undone.')}
-            >
-              <View className="w-10 h-10 bg-destructive/10 rounded-lg items-center justify-center mr-3">
-                <Ionicons name="trash-outline" size={20} color="#EF4444" />
-              </View>
-              <Text className="text-base font-medium text-destructive">Delete Group</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
     </ScrollView>
   );
 }

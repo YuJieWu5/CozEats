@@ -32,6 +32,20 @@ export interface Group {
   name: string;
 }
 
+export interface GroupMemberInfo {
+  userName: string | null;
+  userEmail: string;
+  role: string;
+}
+
+export interface GroupDetailResponse {
+  groupId: string;
+  groupName: string;
+  members: GroupMemberInfo[];
+  mealCount: number;
+  groceryCount: number;
+}
+
 /**
  * Get all groups that a user belongs to
  * Endpoint: GET /users/{userId}/groups
@@ -47,6 +61,26 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
   if (!response.ok) {
     const error: ApiError = await response.json();
     throw new Error(error.detail || 'Failed to fetch user groups');
+  }
+
+  return response.json();
+}
+
+/**
+ * Get detailed information about a group
+ * Endpoint: GET /groups/{groupId}
+ */
+export async function getGroupDetail(groupId: string): Promise<GroupDetailResponse> {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to fetch group details');
   }
 
   return response.json();
