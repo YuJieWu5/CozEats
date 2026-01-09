@@ -3,8 +3,9 @@ import { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { CreateMealForm } from '@/components/create-meal-form';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { useAuth } from '@/lib/auth-context';
-import { getMeals, getUserGroups, MealResponse } from '@/lib/api';
+import { getMeals, getUserGroups, MealResponse, deleteMeal } from '@/lib/api';
 
 const getMealTypeEmoji = (mealType: 'breakfast' | 'lunch' | 'dinner') => {
   switch (mealType) {
@@ -31,6 +32,9 @@ export default function MealsScreen() {
   const [groupId, setGroupId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMeals, setIsLoadingMeals] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [mealToDelete, setMealToDelete] = useState<MealResponse | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Format date to YYYY-MM-DD for API
   const formatDateKey = (date: Date) => {
@@ -98,6 +102,34 @@ export default function MealsScreen() {
     
     if (mealDate === selectedDateStr) {
       setMeals(prevMeals => [...prevMeals, newMeal]);
+    }
+  };
+
+  const handleLongPressMeal = (meal: MealResponse) => {
+    setMealToDelete(meal);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!mealToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteMeal(mealToDelete.id);
+      
+      // Remove the meal from local state
+      setMeals(prevMeals => prevMeals.filter(m => m.id !== mealToDelete.id));
+      
+      // Close dialog and clear state
+      setDeleteDialogOpen(false);
+      setMealToDelete(null);
+      
+      Alert.alert('Success', 'Meal deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete meal:', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete meal');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -195,6 +227,8 @@ export default function MealsScreen() {
                     <TouchableOpacity
                       key={meal.id}
                       className="bg-card p-4 rounded-xl border border shadow-sm active:scale-98"
+                      onLongPress={() => handleLongPressMeal(meal)}
+                      delayLongPress={500}
                     >
                       <Text className="text-base font-medium text-foreground">
                         {meal.name}
@@ -224,6 +258,8 @@ export default function MealsScreen() {
                     <TouchableOpacity
                       key={meal.id}
                       className="bg-card p-4 rounded-xl border border shadow-sm active:scale-98"
+                      onLongPress={() => handleLongPressMeal(meal)}
+                      delayLongPress={500}
                     >
                       <Text className="text-base font-medium text-foreground">
                         {meal.name}
@@ -253,6 +289,8 @@ export default function MealsScreen() {
                     <TouchableOpacity
                       key={meal.id}
                       className="bg-card p-4 rounded-xl border border shadow-sm active:scale-98"
+                      onLongPress={() => handleLongPressMeal(meal)}
+                      delayLongPress={500}
                     >
                       <Text className="text-base font-medium text-foreground">
                         {meal.name}
@@ -289,6 +327,22 @@ export default function MealsScreen() {
           groupId={groupId}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setMealToDelete(null);
+          }
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Meal?"
+        description={`Are you sure you want to delete "${mealToDelete?.name}"? This action cannot be undone.`}
+        isDeleting={isDeleting}
+        confirmText="Delete"
+      />
     </ScrollView>
   );
 }
