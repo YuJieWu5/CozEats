@@ -73,15 +73,12 @@ export async function signup(data: SignupData): Promise<User> {
 }
 
 /**
- * Login user
- * Note: This is a temporary implementation that verifies credentials
- * by fetching all users. You should implement a proper login endpoint
- * in your backend that returns a JWT token or session.
+ * Sign in user with email and password
+ * Endpoint: POST /users/signin
+ * Validates credentials using bcrypt and returns user information if successful
  */
 export async function login(data: LoginData): Promise<User> {
-  // TODO: Replace this with actual login endpoint when available
-  // For now, this is a placeholder that will need backend implementation
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+  const response = await fetch(`${API_BASE_URL}/users/signin`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -146,3 +143,120 @@ export async function changePassword(
   return response.json();
 }
 
+// ==================== Meal APIs ====================
+
+export interface MealResponse {
+  id: string;
+  name: string;
+  mealType: 'breakfast' | 'lunch' | 'dinner';
+  date: string;
+  creatorName: string | null;
+  createdAt: string;
+}
+
+export interface MealCreateData {
+  name: string;
+  mealType: 'breakfast' | 'lunch' | 'dinner';
+  date: string; // ISO 8601 format
+  createdBy: string;
+  groupId: string;
+}
+
+export interface MealUpdateData {
+  name?: string;
+  mealType?: 'breakfast' | 'lunch' | 'dinner';
+  date?: string; // ISO 8601 format
+}
+
+/**
+ * Get meals for a specific group, optionally filtered by date
+ * Endpoint: GET /meals?groupId={groupId}&date={YYYY-MM-DD}
+ */
+export async function getMeals(
+  groupId: string,
+  date?: string
+): Promise<MealResponse[]> {
+  const params = new URLSearchParams({ groupId });
+  if (date) {
+    params.append('date', date);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/meals?${params.toString()}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to fetch meals');
+  }
+
+  return response.json();
+}
+
+/**
+ * Create a new meal
+ * Endpoint: POST /meals
+ */
+export async function createMeal(data: MealCreateData): Promise<MealResponse> {
+  const response = await fetch(`${API_BASE_URL}/meals`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to create meal');
+  }
+
+  return response.json();
+}
+
+/**
+ * Update a meal
+ * Endpoint: PUT /meals/{mealId}
+ */
+export async function updateMeal(
+  mealId: string,
+  data: MealUpdateData
+): Promise<MealResponse> {
+  const response = await fetch(`${API_BASE_URL}/meals/${mealId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to update meal');
+  }
+
+  return response.json();
+}
+
+/**
+ * Delete a meal
+ * Endpoint: DELETE /meals/{mealId}
+ */
+export async function deleteMeal(mealId: string): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/meals/${mealId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to delete meal');
+  }
+
+  return response.json();
+}

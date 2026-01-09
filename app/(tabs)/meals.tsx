@@ -1,31 +1,10 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { CreateMealForm } from '@/components/create-meal-form';
-
-// Mock data for meals with new format: [id, name, mealType]
-const mockMeals: Record<string, Array<{ id: number; name: string; mealType: 'breakfast' | 'lunch' | 'dinner' }>> = {
-  '2025-12-18': [
-    { id: 1, name: 'Breakfast Burrito', mealType: 'breakfast' },
-    { id: 2, name: 'Grilled Chicken Salad', mealType: 'lunch' },
-    { id: 3, name: 'Salmon with Veggies', mealType: 'dinner' },
-  ],
-  '2025-12-19': [
-    { id: 4, name: 'Oatmeal with Berries', mealType: 'breakfast' },
-    { id: 5, name: 'Turkey Sandwich', mealType: 'lunch' },
-    { id: 6, name: 'Pasta Primavera', mealType: 'dinner' },
-  ],
-  '2025-12-20': [
-    { id: 7, name: 'Greek Yogurt Parfait', mealType: 'breakfast' },
-    { id: 8, name: 'Chicken Caesar Wrap', mealType: 'lunch' },
-  ],
-  '2025-12-16': [
-    { id: 9, name: 'Avocado Toast', mealType: 'breakfast' },
-    { id: 10, name: 'Quinoa Bowl', mealType: 'lunch' },
-    { id: 11, name: 'Stir Fry Noodles', mealType: 'dinner' },
-  ],
-};
+import { useAuth } from '@/lib/auth-context';
+import { getMeals, getUserGroups, MealResponse } from '@/lib/api';
 
 const getMealTypeEmoji = (mealType: 'breakfast' | 'lunch' | 'dinner') => {
   switch (mealType) {
@@ -45,35 +24,105 @@ const getMealTypeLabel = (mealType: string) => {
 };
 
 export default function MealsScreen() {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date('2025-12-18'));
+  const { user } = useAuth();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [meals, setMeals] = useState<MealResponse[]>([]);
+  const [groupId, setGroupId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMeals, setIsLoadingMeals] = useState(false);
   
-  // Format date to YYYY-MM-DD for lookup
+  // Format date to YYYY-MM-DD for API
   const formatDateKey = (date: Date) => {
     return format(date, 'yyyy-MM-dd');
   };
   
-  // Get meals for selected date
-  const dateKey = formatDateKey(selectedDate);
-  const mealsForDate = mockMeals[dateKey] || [];
+  // Fetch user's groups on mount
+  useEffect(() => {
+    const fetchGroups = async () => {
+      if (!user) return;
+      
+      try {
+        setIsLoading(true);
+        const groups = await getUserGroups(user.id);
+        if (groups.length > 0) {
+          // Use the first group for now
+          // TODO: Allow user to select which group to view
+          setGroupId(groups[0].groupId);
+        }
+      } catch (error) {
+        console.error('Failed to fetch groups:', error);
+        Alert.alert('Error', 'Failed to load groups');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchGroups();
+  }, [user]);
+  
+  // Fetch meals when groupId or selectedDate changes
+  useEffect(() => {
+    const fetchMeals = async () => {
+      if (!groupId) return;
+      
+      try {
+        setIsLoadingMeals(true);
+        const dateStr = formatDateKey(selectedDate);
+        const fetchedMeals = await getMeals(groupId, dateStr);
+        setMeals(fetchedMeals);
+      } catch (error) {
+        console.error('Failed to fetch meals:', error);
+        Alert.alert('Error', 'Failed to load meals');
+      } finally {
+        setIsLoadingMeals(false);
+      }
+    };
+    
+    fetchMeals();
+  }, [groupId, selectedDate]);
   
   // Group meals by type
-  const mealsByType = mealsForDate.reduce((acc, meal) => {
+  const mealsByType = meals.reduce((acc, meal) => {
     if (!acc[meal.mealType]) {
       acc[meal.mealType] = [];
     }
     acc[meal.mealType].push(meal);
     return acc;
-  }, {} as Record<string, typeof mealsForDate>);
+  }, {} as Record<string, MealResponse[]>);
 
-  // Highlight dates with meals
-  const datesWithMeals = Object.keys(mockMeals).map(dateStr => new Date(dateStr));
-
-  const handleAddMeal = (meal: { date: Date; name: string; mealType: 'breakfast' | 'lunch' | 'dinner' }) => {
-    // TODO: Add meal to the data store
-    console.log('Adding meal:', meal);
-    // For now, this will just log. You can integrate with your data management later
+  const handleMealCreated = (newMeal: MealResponse) => {
+    // Add the new meal to the list if it's for the selected date
+    const mealDate = format(new Date(newMeal.date), 'yyyy-MM-dd');
+    const selectedDateStr = formatDateKey(selectedDate);
+    
+    if (mealDate === selectedDateStr) {
+      setMeals(prevMeals => [...prevMeals, newMeal]);
+    }
   };
+
+  // Show loading state while fetching initial data
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text className="text-muted-foreground mt-4">Loading groups...</Text>
+      </View>
+    );
+  }
+  
+  // Show message if user has no groups
+  if (!groupId) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center px-8">
+        <Text className="text-6xl mb-4">👥</Text>
+        <Text className="text-xl font-bold text-foreground mb-2">No Group Found</Text>
+        <Text className="text-muted-foreground text-center">
+          You need to join or create a group to start planning meals.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView className="flex-1 bg-background">
@@ -101,15 +150,20 @@ export default function MealsScreen() {
           </Text>
           <View className="flex-row items-center">
             <View className={`w-2 h-2 rounded-full mr-2 ${
-              mealsForDate.length > 0 ? 'bg-success' : 'bg-muted'
+              meals.length > 0 ? 'bg-success' : 'bg-muted'
             }`} />
             <Text className="text-sm text-muted-foreground">
-              {mealsForDate.length} meal{mealsForDate.length !== 1 ? 's' : ''}
+              {meals.length} meal{meals.length !== 1 ? 's' : ''}
             </Text>
           </View>
         </View>
         
-        {mealsForDate.length === 0 ? (
+        {isLoadingMeals ? (
+          <View className="bg-card p-8 rounded-xl items-center shadow-sm">
+            <ActivityIndicator size="small" color="#3B82F6" />
+            <Text className="text-muted-foreground mt-2">Loading meals...</Text>
+          </View>
+        ) : meals.length === 0 ? (
           <View className="bg-card p-8 rounded-xl items-center shadow-sm">
             <Text className="text-6xl mb-3">🍽️</Text>
             <Text className="text-muted-foreground text-center text-base mb-2">
@@ -145,6 +199,11 @@ export default function MealsScreen() {
                       <Text className="text-base font-medium text-foreground">
                         {meal.name}
                       </Text>
+                      {meal.creatorName && (
+                        <Text className="text-sm text-muted-foreground mt-1">
+                          by {meal.creatorName}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -169,6 +228,11 @@ export default function MealsScreen() {
                       <Text className="text-base font-medium text-foreground">
                         {meal.name}
                       </Text>
+                      {meal.creatorName && (
+                        <Text className="text-sm text-muted-foreground mt-1">
+                          by {meal.creatorName}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -193,6 +257,11 @@ export default function MealsScreen() {
                       <Text className="text-base font-medium text-foreground">
                         {meal.name}
                       </Text>
+                      {meal.creatorName && (
+                        <Text className="text-sm text-muted-foreground mt-1">
+                          by {meal.creatorName}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -211,12 +280,15 @@ export default function MealsScreen() {
       </View>
 
       {/* Create Meal Form Drawer */}
-      <CreateMealForm
-        open={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        onSubmit={handleAddMeal}
-        initialDate={selectedDate}
-      />
+      {groupId && (
+        <CreateMealForm
+          open={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          onMealCreated={handleMealCreated}
+          initialDate={selectedDate}
+          groupId={groupId}
+        />
+      )}
     </ScrollView>
   );
 }
