@@ -5,15 +5,19 @@ import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useState, useEffect } from 'react';
 import { getUserGroups, Group } from '@/lib/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface MenuSheetProps {
   open: boolean;
   onClose: () => void;
 }
 
+const SELECTED_GROUP_KEY = '@cozeats_selected_group';
+
 export function MenuSheet({ open, onClose }: MenuSheetProps) {
   const { user } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,6 +27,35 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
       fetchGroups();
     }
   }, [open, user?.id]);
+
+  // Load selected group from AsyncStorage and set default if needed
+  useEffect(() => {
+    if (groups.length > 0) {
+      loadSelectedGroup();
+    }
+  }, [groups]);
+
+  const loadSelectedGroup = async () => {
+    try {
+      const storedGroupId = await AsyncStorage.getItem(SELECTED_GROUP_KEY);
+      
+      if (storedGroupId && groups.some(g => g.groupId === storedGroupId)) {
+        // Use stored group if it exists in current groups
+        setSelectedGroupId(storedGroupId);
+      } else if (groups.length > 0) {
+        // Default to first group if no stored selection or stored group not found
+        const firstGroupId = groups[0].groupId;
+        setSelectedGroupId(firstGroupId);
+        await AsyncStorage.setItem(SELECTED_GROUP_KEY, firstGroupId);
+      }
+    } catch (err) {
+      console.error('Error loading selected group:', err);
+      // Fallback to first group
+      if (groups.length > 0) {
+        setSelectedGroupId(groups[0].groupId);
+      }
+    }
+  };
 
   const fetchGroups = async () => {
     if (!user?.id) return;
@@ -45,9 +78,20 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
     router.push('/profile');
   };
 
-  const handleGroupPress = (groupId: string) => {
+  const handleGroupPress = async (groupId: string) => {
+    // Only update if selecting a different group
+    if (groupId !== selectedGroupId) {
+      try {
+        await AsyncStorage.setItem(SELECTED_GROUP_KEY, groupId);
+        setSelectedGroupId(groupId);
+        console.log('Selected group changed to:', groupId);
+      } catch (err) {
+        console.error('Error saving selected group:', err);
+      }
+    }
+    
     onClose();
-    // TODO: Navigate to group details page
+    // TODO: Navigate to group details page or refresh data for selected group
     console.log('Navigate to group:', groupId);
   };
 
@@ -100,23 +144,38 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
               </View>
             ) : groups.length > 0 ? (
               <View className="space-y-2">
-                {groups.map((group) => (
-                  <TouchableOpacity
-                    key={group.groupId}
-                    className="flex-row items-center justify-between p-4 bg-card rounded-lg active:opacity-70"
-                    onPress={() => handleGroupPress(group.groupId)}
-                  >
-                    <View className="flex-row items-center flex-1">
-                      <View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center mr-3">
-                        <Ionicons name="people" size={20} color="#2563eb" />
+                {groups.map((group) => {
+                  const isSelected = group.groupId === selectedGroupId;
+                  return (
+                    <TouchableOpacity
+                      key={group.groupId}
+                      className={`flex-row items-center justify-between p-4 rounded-lg active:opacity-70 ${
+                        isSelected ? 'bg-primary/10 border-2 border-primary' : 'bg-card'
+                      }`}
+                      onPress={() => handleGroupPress(group.groupId)}
+                    >
+                      <View className="flex-row items-center flex-1">
+                        <View className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${
+                          isSelected ? 'bg-primary' : 'bg-primary/10'
+                        }`}>
+                          <Ionicons 
+                            name={isSelected ? "people" : "people-outline"} 
+                            size={20} 
+                            color={isSelected ? "#FFFFFF" : "#2563eb"} 
+                          />
+                        </View>
+                        <Text className={`text-base flex-1 ${
+                          isSelected ? 'text-primary font-semibold' : 'text-foreground font-medium'
+                        }`}>
+                          {group.name}
+                        </Text>
                       </View>
-                      <Text className="text-base text-foreground font-medium flex-1">
-                        {group.name}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-                  </TouchableOpacity>
-                ))}
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={20} color="#2563eb" />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             ) : (
               <View className="p-4 bg-muted rounded-lg">
