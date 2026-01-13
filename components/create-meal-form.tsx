@@ -1,5 +1,5 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Drawer } from '@/components/ui/drawer';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { Select, SelectItem } from '@/components/ui/select';
@@ -28,6 +28,13 @@ export function CreateMealForm({ open, onClose, onMealCreated, initialDate, grou
   const [mealName, setMealName] = useState('');
   const [selectedMealType, setSelectedMealType] = useState<MealType>('breakfast');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update date when drawer opens or initialDate changes
+  useEffect(() => {
+    if (open && initialDate) {
+      setDate(initialDate);
+    }
+  }, [open, initialDate]);
 
   const handleSubmit = async () => {
     if (!mealName.trim() || !user) {
