@@ -1,10 +1,13 @@
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useState, useCallback, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CreateGroceryForm } from '@/components/create-grocery-form';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { useAuth } from '@/lib/auth-context';
 import { getGroceries, updateGrocery, getUserGroups, deleteAllGroceries, deleteGrocery, GroceryResponse } from '@/lib/api';
+
+const SELECTED_GROUP_KEY = '@cozeats_selected_group';
 
 export default function GroceryScreen() {
   const { user } = useAuth();
@@ -16,25 +19,38 @@ export default function GroceryScreen() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch user's groups when user loads
-  useEffect(() => {
-    if (user) {
-      getUserGroups(user.id)
-        .then(groups => {
-          if (groups.length > 0) {
-            setGroupId(groups[0].groupId);
-          } else {
-            setError('No groups found. Please create or join a group first.');
-            setLoading(false);
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch groups:', err);
-          setError('Failed to load groups');
+  // Load selected group from AsyncStorage
+  const loadSelectedGroup = useCallback(async () => {
+    try {
+      const storedGroupId = await AsyncStorage.getItem(SELECTED_GROUP_KEY);
+      
+      if (storedGroupId) {
+        setGroupId(storedGroupId);
+      } else if (user) {
+        // Fallback: load first group if no stored selection
+        const groups = await getUserGroups(user.id);
+        if (groups.length > 0) {
+          const firstGroupId = groups[0].groupId;
+          setGroupId(firstGroupId);
+          await AsyncStorage.setItem(SELECTED_GROUP_KEY, firstGroupId);
+        } else {
+          setError('No groups found. Please create or join a group first.');
           setLoading(false);
-        });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load selected group:', err);
+      setError('Failed to load group');
+      setLoading(false);
     }
   }, [user]);
+
+  // Load selected group when component mounts or comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadSelectedGroup();
+    }, [loadSelectedGroup])
+  );
 
   const fetchGroceries = useCallback(async () => {
     if (!groupId) {

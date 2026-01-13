@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { getUserGroups, Group } from '@/lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CreateGroupDialog } from '@/components/create-group-dialog';
+import { JoinGroupDialog } from '@/components/join-group-dialog';
 
 interface MenuSheetProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [joinGroupOpen, setJoinGroupOpen] = useState(false);
 
   // Fetch user groups when sheet opens
   useEffect(() => {
@@ -105,6 +107,11 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
 
   const handleCreateGroupSuccess = () => {
     setCreateGroupOpen(false);
+    fetchGroups(); // Refresh the groups list
+  };
+
+  const handleJoinGroupSuccess = (groupName: string) => {
+    setJoinGroupOpen(false);
     fetchGroups(); // Refresh the groups list
   };
 
@@ -208,6 +215,17 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
                 Create Group
               </Text>
             </TouchableOpacity>
+
+            {/* Join Group Button */}
+            <TouchableOpacity
+              className="flex-row items-center justify-center p-4 bg-background border-2 border-primary rounded-lg mt-2 active:opacity-70"
+              onPress={() => setJoinGroupOpen(true)}
+            >
+              <Ionicons name="link-outline" size={20} color="#2563eb" />
+              <Text className="text-primary ml-2 font-semibold text-base">
+                Join Group
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Menu Items */}
@@ -242,6 +260,13 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
         open={createGroupOpen}
         onClose={() => setCreateGroupOpen(false)}
         onSuccess={handleCreateGroupSuccess}
+      />
+
+      {/* Join Group Dialog */}
+      <JoinGroupDialog
+        open={joinGroupOpen}
+        onClose={() => setJoinGroupOpen(false)}
+        onSuccess={handleJoinGroupSuccess}
       />
     </Sheet>
   );

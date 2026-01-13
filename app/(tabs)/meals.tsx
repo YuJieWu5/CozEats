@@ -1,11 +1,15 @@
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { CreateMealForm } from '@/components/create-meal-form';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { useAuth } from '@/lib/auth-context';
 import { getMeals, getUserGroups, MealResponse, deleteMeal } from '@/lib/api';
+
+const SELECTED_GROUP_KEY = '@cozeats_selected_group';
 
 const getMealTypeEmoji = (mealType: 'breakfast' | 'lunch' | 'dinner') => {
   switch (mealType) {
@@ -41,29 +45,39 @@ export default function MealsScreen() {
     return format(date, 'yyyy-MM-dd');
   };
   
-  // Fetch user's groups on mount
-  useEffect(() => {
-    const fetchGroups = async () => {
-      if (!user) return;
+  // Load selected group from AsyncStorage
+  const loadSelectedGroup = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const storedGroupId = await AsyncStorage.getItem(SELECTED_GROUP_KEY);
       
-      try {
-        setIsLoading(true);
+      if (storedGroupId) {
+        setGroupId(storedGroupId);
+      } else {
+        // Fallback: load first group if no stored selection
         const groups = await getUserGroups(user.id);
         if (groups.length > 0) {
-          // Use the first group for now
-          // TODO: Allow user to select which group to view
-          setGroupId(groups[0].groupId);
+          const firstGroupId = groups[0].groupId;
+          setGroupId(firstGroupId);
+          await AsyncStorage.setItem(SELECTED_GROUP_KEY, firstGroupId);
         }
-      } catch (error) {
-        console.error('Failed to fetch groups:', error);
-        Alert.alert('Error', 'Failed to load groups');
-      } finally {
-        setIsLoading(false);
       }
-    };
-    
-    fetchGroups();
+    } catch (error) {
+      console.error('Failed to load selected group:', error);
+      Alert.alert('Error', 'Failed to load group');
+    } finally {
+      setIsLoading(false);
+    }
   }, [user]);
+
+  // Load selected group when component mounts or comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadSelectedGroup();
+    }, [loadSelectedGroup])
+  );
   
   // Fetch meals when groupId or selectedDate changes
   useEffect(() => {
