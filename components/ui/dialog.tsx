@@ -159,8 +159,10 @@ const DialogContent = React.forwardRef<View, DialogContentProps>(
     React.useEffect(() => {
       if (open && !isVisible) {
         setIsVisible(true);
+      } else if (!open && isVisible) {
+        handleClose();
       }
-    }, [open, isVisible]);
+    }, [open, isVisible, handleClose]);
 
     React.useEffect(() => {
       if (isVisible) {

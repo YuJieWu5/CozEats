@@ -50,6 +50,8 @@ export function CreateGroupDialog({ open, onClose, onSuccess }: CreateGroupDialo
       
       // Reset form
       setGroupName('');
+      
+      // Call success callback (which will set open to false in parent)
       onSuccess();
     } catch (err) {
       console.error('Failed to create group:', err);

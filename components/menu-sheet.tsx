@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { Sheet } from '@/components/ui/sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -148,7 +148,7 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
         </View>
 
         {/* User Groups Section */}
-        <View className="flex-1 p-4">
+        <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
           <View className="mb-4">
             <Text className="text-sm font-semibold text-muted-foreground uppercase mb-2 px-2">
               My Groups
@@ -241,7 +241,7 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
               <Text className="text-base text-foreground ml-4 font-medium">Profile Settings</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
 
         {/* Logout Button */}
         <View className="p-4 border-t border-border">

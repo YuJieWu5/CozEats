@@ -54,7 +54,9 @@ export function JoinGroupDialog({ open, onClose, onSuccess }: JoinGroupDialogPro
       // Show success message
       Alert.alert('Success', `You have successfully joined ${response.groupName}!`);
       
+      // Call success callback and close dialog
       onSuccess(response.groupName);
+      onClose();
     } catch (err) {
       console.error('Failed to join group:', err);
       Alert.alert('Error', err instanceof Error ? err.message : 'Failed to join group');
