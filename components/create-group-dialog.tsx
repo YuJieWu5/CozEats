@@ -1,14 +1,12 @@
 import { View, Text, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useState } from 'react';
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createGroup } from '@/lib/api';
@@ -67,11 +65,11 @@ export function CreateGroupDialog({ open, onClose, onSuccess }: CreateGroupDialo
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Create Group</AlertDialogTitle>
-        </AlertDialogHeader>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent showCloseButton={true}>
+        <DialogHeader>
+          <DialogTitle>Create Group</DialogTitle>
+        </DialogHeader>
 
         {/* Group Name Input */}
         <View className="px-6 py-4">
@@ -87,32 +85,28 @@ export function CreateGroupDialog({ open, onClose, onSuccess }: CreateGroupDialo
           />
         </View>
 
-        <AlertDialogFooter>
-          <AlertDialogCancel>
-            <Button
-              variant="outline"
-              onPress={handleCancel}
-              disabled={loading}
-            >
-              <Text className="text-foreground font-semibold">Cancel</Text>
-            </Button>
-          </AlertDialogCancel>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onPress={handleCancel}
+            disabled={loading}
+          >
+            <Text className="text-foreground font-semibold">Cancel</Text>
+          </Button>
 
-          <AlertDialogAction>
-            <Button
-              onPress={handleCreate}
-              disabled={!groupName.trim() || loading}
-              className={!groupName.trim() || loading ? 'opacity-50' : ''}
-            >
-              {loading ? (
-                <ActivityIndicator color="#ffffff" size="small" />
-              ) : (
-                <Text className="text-primary-foreground font-semibold">Create</Text>
-              )}
-            </Button>
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          <Button
+            onPress={handleCreate}
+            disabled={!groupName.trim() || loading}
+            className={!groupName.trim() || loading ? 'opacity-50' : ''}
+          >
+            {loading ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <Text className="text-primary-foreground font-semibold">Create</Text>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
