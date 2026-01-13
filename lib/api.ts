@@ -58,6 +58,32 @@ export interface GroupCreateResponse {
   updatedAt: string;
 }
 
+export interface InviteCreateData {
+  groupId: string;
+  createdById: string;
+}
+
+export interface InviteResponse {
+  id: string;
+  code: string;
+  groupId: string;
+  createdById: string;
+  expiresAt: string;
+  usedBy: string | null;
+  createdAt: string;
+}
+
+export interface InviteJoinData {
+  code: string;
+  userId: string;
+}
+
+export interface InviteJoinResponse {
+  message: string;
+  groupId: string;
+  groupName: string;
+}
+
 /**
  * Create a new group with the user as admin
  * Endpoint: POST /groups
@@ -74,6 +100,48 @@ export async function createGroup(data: GroupCreateData): Promise<GroupCreateRes
   if (!response.ok) {
     const error: ApiError = await response.json();
     throw new Error(error.detail || 'Failed to create group');
+  }
+
+  return response.json();
+}
+
+/**
+ * Generate a 6-character invite code for a group with 7-day expiration
+ * Endpoint: POST /groups/{groupId}/invite
+ */
+export async function createGroupInvite(groupId: string, data: InviteCreateData): Promise<InviteResponse> {
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}/invite`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to create invite code');
+  }
+
+  return response.json();
+}
+
+/**
+ * Join a group using an invite code
+ * Endpoint: POST /groups/invites/join
+ */
+export async function joinGroupWithInvite(data: InviteJoinData): Promise<InviteJoinResponse> {
+  const response = await fetch(`${API_BASE_URL}/groups/invites/join`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to join group');
   }
 
   return response.json();
