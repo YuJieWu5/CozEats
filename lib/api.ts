@@ -46,6 +46,39 @@ export interface GroupDetailResponse {
   groceryCount: number;
 }
 
+export interface GroupCreateData {
+  userId: string;
+  groupName: string;
+}
+
+export interface GroupCreateResponse {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Create a new group with the user as admin
+ * Endpoint: POST /groups
+ */
+export async function createGroup(data: GroupCreateData): Promise<GroupCreateResponse> {
+  const response = await fetch(`${API_BASE_URL}/groups/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.detail || 'Failed to create group');
+  }
+
+  return response.json();
+}
+
 /**
  * Get all groups that a user belongs to
  * Endpoint: GET /users/{userId}/groups

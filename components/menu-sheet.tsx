@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useState, useEffect } from 'react';
 import { getUserGroups, Group } from '@/lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CreateGroupDialog } from '@/components/create-group-dialog';
 
 interface MenuSheetProps {
   open: boolean;
@@ -20,6 +21,7 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
 
   // Fetch user groups when sheet opens
   useEffect(() => {
@@ -99,6 +101,11 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
     onClose();
     // TODO: Navigate to group details page or refresh data for selected group
     console.log('Navigate to group:', groupId);
+  };
+
+  const handleCreateGroupSuccess = () => {
+    setCreateGroupOpen(false);
+    fetchGroups(); // Refresh the groups list
   };
 
   // Get user initials for avatar
@@ -190,6 +197,17 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
                 </Text>
               </View>
             )}
+
+            {/* Create Group Button */}
+            <TouchableOpacity
+              className="flex-row items-center justify-center p-4 bg-primary rounded-lg mt-3 active:opacity-70"
+              onPress={() => setCreateGroupOpen(true)}
+            >
+              <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+              <Text className="text-primary-foreground ml-2 font-semibold text-base">
+                Create Group
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Menu Items */}
@@ -218,6 +236,13 @@ export function MenuSheet({ open, onClose }: MenuSheetProps) {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Create Group Dialog */}
+      <CreateGroupDialog
+        open={createGroupOpen}
+        onClose={() => setCreateGroupOpen(false)}
+        onSuccess={handleCreateGroupSuccess}
+      />
     </Sheet>
   );
 }
