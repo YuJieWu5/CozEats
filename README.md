@@ -60,7 +60,7 @@ CozEats is a collaborative meal planning and grocery list app designed for group
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/cozeats.git
+git clone https://github.com/YuJieWu5/cozeats.git
 cd cozeats
 ```
 
@@ -129,4 +129,4 @@ For questions or support, please open an issue on GitHub.
 
 ---
 
-Made with ❤️ by the CozEats team
+Made with ❤️ by Vivian Wu
