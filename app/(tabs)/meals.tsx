@@ -76,7 +76,24 @@ export default function MealsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadSelectedGroup();
-    }, [loadSelectedGroup])
+      
+      // Set up polling to check for group changes while screen is focused
+      const intervalId = setInterval(async () => {
+        try {
+          const storedGroupId = await AsyncStorage.getItem(SELECTED_GROUP_KEY);
+          if (storedGroupId && storedGroupId !== groupId) {
+            setGroupId(storedGroupId);
+          }
+        } catch (err) {
+          console.error('Error polling for group changes:', err);
+        }
+      }, 1000); // Check every second
+      
+      // Cleanup interval when screen loses focus
+      return () => {
+        clearInterval(intervalId);
+      };
+    }, [loadSelectedGroup, groupId])
   );
   
   // Fetch meals when groupId or selectedDate changes

@@ -1,60 +1,24 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getGroupDetail, GroupDetailResponse } from '@/lib/api';
+import { getGroupDetail, GroupDetailResponse, createGroupInvite, InviteResponse } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { InviteCodeDialog } from '@/components/invite-code-dialog';
 
 const SELECTED_GROUP_KEY = '@cozeats_selected_group';
 
 export default function GroupInfoScreen() {
-  const [showCode, setShowCode] = useState(false);
   const [groupData, setGroupData] = useState<GroupDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteCode, setInviteCode] = useState<InviteResponse | null>(null);
+  const [generatingInvite, setGeneratingInvite] = useState(false);
   const { user } = useAuth();
   
-  // Load group data whenever the screen comes into focus or groupId changes
-  useFocusEffect(
-    useCallback(() => {
-      checkAndLoadGroup();
-    }, [])
-  );
-
-  // Also watch for groupId changes
-  useEffect(() => {
-    if (currentGroupId) {
-      loadGroupData(currentGroupId);
-    }
-  }, [currentGroupId]);
-
-  const checkAndLoadGroup = async () => {
-    try {
-      const groupId = await AsyncStorage.getItem(SELECTED_GROUP_KEY);
-      
-      if (!groupId) {
-        setError('No group selected');
-        setLoading(false);
-        return;
-      }
-
-      // Only reload if groupId has changed
-      if (groupId !== currentGroupId) {
-        setCurrentGroupId(groupId);
-      } else {
-        // Still reload even if same groupId (in case data changed)
-        await loadGroupData(groupId);
-      }
-    } catch (err) {
-      console.error('Error checking group ID:', err);
-      setError('Failed to load group ID');
-      setLoading(false);
-    }
-  };
-
   const loadGroupData = async (groupId: string) => {
     try {
       setLoading(true);
@@ -69,6 +33,61 @@ export default function GroupInfoScreen() {
       setLoading(false);
     }
   };
+
+  const checkAndLoadGroup = useCallback(async () => {
+    try {
+      const groupId = await AsyncStorage.getItem(SELECTED_GROUP_KEY);
+      
+      if (!groupId) {
+        setError('No group selected');
+        setLoading(false);
+        return;
+      }
+
+      // Always reload data when group changes
+      if (groupId !== currentGroupId) {
+        setCurrentGroupId(groupId);
+      } else {
+        // Still reload even if same groupId (in case data changed)
+        await loadGroupData(groupId);
+      }
+    } catch (err) {
+      console.error('Error checking group ID:', err);
+      setError('Failed to load group ID');
+      setLoading(false);
+    }
+  }, [currentGroupId]);
+
+  // Load group data whenever the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      checkAndLoadGroup();
+      
+      // Set up polling to check for group changes while screen is focused
+      const intervalId = setInterval(async () => {
+        try {
+          const storedGroupId = await AsyncStorage.getItem(SELECTED_GROUP_KEY);
+          if (storedGroupId && storedGroupId !== currentGroupId) {
+            setCurrentGroupId(storedGroupId);
+          }
+        } catch (err) {
+          console.error('Error polling for group changes:', err);
+        }
+      }, 1000); // Check every second
+      
+      // Cleanup interval when screen loses focus
+      return () => {
+        clearInterval(intervalId);
+      };
+    }, [checkAndLoadGroup, currentGroupId])
+  );
+
+  // Watch for groupId changes and load data
+  useEffect(() => {
+    if (currentGroupId) {
+      loadGroupData(currentGroupId);
+    }
+  }, [currentGroupId]);
 
   if (loading) {
     return (
@@ -110,13 +129,26 @@ export default function GroupInfoScreen() {
     return email.substring(0, 2).toUpperCase();
   };
 
-  const handleCopyCode = async () => {
-    // TODO: Implement invite code generation and copying
-    Alert.alert('Coming Soon', 'Invite code functionality will be available soon');
-  };
+  const handleGenerateInviteCode = async () => {
+    if (!user?.id || !currentGroupId) {
+      Alert.alert('Error', 'User or group information is missing');
+      return;
+    }
 
-  const handleShowInviteCode = () => {
-    setShowCode(!showCode);
+    try {
+      setGeneratingInvite(true);
+      const invite = await createGroupInvite(currentGroupId, {
+        groupId: currentGroupId,
+        createdById: user.id,
+      });
+      setInviteCode(invite);
+      setInviteDialogOpen(true);
+    } catch (err) {
+      console.error('Failed to generate invite code:', err);
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to generate invite code');
+    } finally {
+      setGeneratingInvite(false);
+    }
   };
 
   return (
@@ -144,45 +176,30 @@ export default function GroupInfoScreen() {
         </View>
       </View>
 
-      {/* Invite Code Section */}
-      <View className="px-4 mb-6">
-        <Text className="text-sm font-semibold text-muted-foreground uppercase mb-3 tracking-wide">
-          Invite Others
-        </Text>
-        <View className="bg-card rounded-xl overflow-hidden shadow-sm">
+      {/* Invite Code Section - Only visible to admins */}
+      {isAdmin && (
+        <View className="px-4 mb-6">
+          <Text className="text-sm font-semibold text-muted-foreground uppercase mb-3 tracking-wide">
+            Invite Others
+          </Text>
           <TouchableOpacity 
-            className="p-4 flex-row items-center justify-between active:bg-accent/50"
-            onPress={handleShowInviteCode}
+            className="bg-info rounded-xl p-4 flex-row items-center justify-center shadow-sm active:opacity-80"
+            onPress={handleGenerateInviteCode}
+            disabled={generatingInvite}
           >
-            <View className="flex-row items-center">
-              <View className="w-10 h-10 bg-info/10 rounded-lg items-center justify-center mr-3">
-                <Ionicons name="ticket-outline" size={20} color="#3B82F6" />
-              </View>
-              <View>
-                <Text className="text-base font-medium text-foreground">Invite Code</Text>
-                <Text className="text-sm text-muted-foreground">
-                  Share this code with others to join
+            {generatingInvite ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <Ionicons name="ticket-outline" size={20} color="#FFFFFF" />
+                <Text className="text-info-foreground font-semibold text-base ml-2">
+                  Generate Invite Code
                 </Text>
-              </View>
-            </View>
-            <Ionicons 
-              name={showCode ? 'chevron-up' : 'chevron-down'} 
-              size={20} 
-              color="#6B7280" 
-            />
+              </>
+            )}
           </TouchableOpacity>
-          
-          {showCode && (
-            <View className="px-4 pb-4 border-t border-border">
-              <View className="bg-muted rounded-lg p-3 mt-3">
-                <Text className="text-sm text-muted-foreground text-center">
-                  Invite code generation coming soon
-                </Text>
-              </View>
-            </View>
-          )}
         </View>
-      </View>
+      )}
 
       {/* Members Section */}
       <View className="px-4 mb-6">
@@ -250,7 +267,13 @@ export default function GroupInfoScreen() {
           </View>
         </View>
       </View>
+
+      {/* Invite Code Dialog */}
+      <InviteCodeDialog
+        open={inviteDialogOpen}
+        onClose={() => setInviteDialogOpen(false)}
+        inviteCode={inviteCode}
+      />
     </ScrollView>
   );
 }
-
