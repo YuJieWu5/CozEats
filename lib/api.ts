@@ -2,7 +2,8 @@
  * API client for CozEats backend
  */
 
-const API_BASE_URL = 'http://0.0.0.0:8000';
+// const API_BASE_URL = 'http://0.0.0.0:8000';
+const API_BASE_URL = 'https://coz-eats-server.vercel.app';
 
 export interface User {
   id: string;
